@@ -77,6 +77,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.web.cors.CorsConfiguration;
+import ca.uhn.fhir.jpa.starter.interceptors.SampleInterceptor;
+import ca.uhn.fhir.jpa.starter.interceptors.PatientAndAdminAuthorizationInterceptor;
 
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
@@ -420,6 +422,9 @@ public class StarterJpaConfig {
 		if (!theIpsOperationProvider.isEmpty()) {
 			fhirServer.registerProvider(theIpsOperationProvider.get());
 		}
+
+		fhirServer.registerInterceptor(new SampleInterceptor());
+		fhirServer.registerInterceptor(new PatientAndAdminAuthorizationInterceptor());
 
 		return fhirServer;
 	}
