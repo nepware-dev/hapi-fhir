@@ -9,6 +9,7 @@ import ca.uhn.fhir.batch2.model.JobDefinition;
 import ca.uhn.fhir.context.ConfigurationException;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.context.FhirVersionEnum;
+import ca.uhn.fhir.context.support.DefaultProfileValidationSupport;
 import ca.uhn.fhir.context.support.IValidationSupport;
 import ca.uhn.fhir.interceptor.api.IInterceptorBroadcaster;
 import ca.uhn.fhir.jpa.api.IDaoRegistry;
@@ -64,6 +65,8 @@ import ca.uhn.fhir.validation.ResultSeverityEnum;
 import com.google.common.base.Strings;
 import jakarta.persistence.EntityManagerFactory;
 import org.hl7.fhir.common.hapi.validation.support.CachingValidationSupport;
+import org.hl7.fhir.common.hapi.validation.support.RemoteTerminologyServiceValidationSupport;
+import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -101,8 +104,24 @@ public class StarterJpaConfig {
 
 	@Primary
 	@Bean
-	public CachingValidationSupport validationSupportChain(JpaValidationSupportChain theJpaValidationSupportChain) {
+	public CachingValidationSupport validationSupportChain(JpaValidationSupportChain theJpaValidationSupportChain, IFhirSystemDao<?, ?> fhirSystemDao) {
+		FhirContext ctx = fhirSystemDao.getContext();
+		System.out.println("code called for logging");
+		DefaultProfileValidationSupport defaultSupport = new DefaultProfileValidationSupport(ctx);
+		theJpaValidationSupportChain.addValidationSupport(defaultSupport);
+		System.out.println("after default logging");
+		RemoteTerminologyServiceValidationSupport remoteTermSvc = new RemoteTerminologyServiceValidationSupport(ctx);
+		remoteTermSvc.setBaseUrl("http://tx.fhir.org/r4");
+		theJpaValidationSupportChain.addValidationSupport(remoteTermSvc);
+		System.out.println("second log test");
 		return ValidationSupportConfigUtil.newCachingValidationSupport(theJpaValidationSupportChain);
+	}
+
+	@Primary
+	@Bean
+	public IValidatorModule validatorModule(CachingValidationSupport validationSupport) {
+		System.out.println("returned validator module");
+		return new FhirInstanceValidator(validationSupport);
 	}
 
 	@Autowired
